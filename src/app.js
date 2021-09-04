@@ -302,14 +302,27 @@ class App{
         const trajectoryPage = $(`
         <div id="main">
             <ul id="lifeTrajectory" class="lifeTrajectory"></ul>
-            <button id="summary" class="mainbtn" style="top:auto; bottom:0.1rem">人生总结</button>
+            <button id="skip-slow" class="mainbtn" style="top:2.5rem;left: 8rem;">></button>
+            <button id="skip-fast" class="mainbtn" style="top:2.5rem;left: 14rem;">>></button>
+            <button id="stop-skip" class="mainbtn" style="top:2.5rem;left: 20rem;display: none;">停止</button>
+            <button id="summary" class="mainbtn" style="top: auto; bottom: 0.1rem;">人生总结</button>
         </div>
         `);
 
+        let t1 = null;
+        let t2 = null;
         trajectoryPage
             .find('#lifeTrajectory')
             .click(()=>{
-                if(this.#isEnd) return;
+                if(this.#isEnd) {
+                    window.clearInterval(t1);
+                    window.clearInterval(t2);
+                    t1 = null; t2 = null;
+                    trajectoryPage.find('#skip-slow').show()
+                    trajectoryPage.find('#skip-fast').show()
+                    trajectoryPage.find('#stop-skip').hide()
+                    return;
+                }
                 const trajectory = this.#life.next();
                 const { age, content, isEnd } = trajectory;
 
@@ -336,7 +349,47 @@ class App{
         trajectoryPage
             .find('#summary')
             .click(()=>{
+                trajectoryPage.find('#skip-slow').show()
+                trajectoryPage.find('#skip-fast').show()
+                trajectoryPage.find('#stop-skip').hide()
                 this.switch('summary');
+            })
+
+        trajectoryPage
+            .find('#skip-slow')
+            .click(()=>{
+                if(this.#isEnd) {
+                    this.hint("人生已经结束了哦~");
+                    return;
+                }
+                trajectoryPage.find('#skip-slow').hide()
+                trajectoryPage.find('#skip-fast').hide()
+                trajectoryPage.find('#stop-skip').show()
+                t1 = setInterval("$('#lifeTrajectory').click();", 500);
+            })
+
+        trajectoryPage
+            .find('#skip-fast')
+            .click(()=>{
+                if(this.#isEnd) {
+                    this.hint("人生已经结束了哦~");
+                    return;
+                }
+                trajectoryPage.find('#skip-slow').hide()
+                trajectoryPage.find('#skip-fast').hide()
+                trajectoryPage.find('#stop-skip').show()
+                t1 = setInterval("$('#lifeTrajectory').click();", 100);
+            })
+
+        trajectoryPage
+            .find('#stop-skip')
+            .click(()=>{
+                trajectoryPage.find('#skip-slow').show()
+                trajectoryPage.find('#skip-fast').show()
+                trajectoryPage.find('#stop-skip').hide()
+                window.clearInterval(t1);
+                window.clearInterval(t2);
+                t1 = null; t2 = null;
             })
 
         // Summary
