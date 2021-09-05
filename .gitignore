@@ -106,3 +106,5 @@ dist
 utils/xlsxTransform-*
 
 /.idea
+
+package-lock.json
