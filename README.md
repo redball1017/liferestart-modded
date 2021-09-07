@@ -11,3 +11,5 @@ from [VickScarlet/lifeRestart](https://github.com/VickScarlet/lifeRestart)
 - 可以两种速度快进人生
 
 [Demo](https://liferestart.mocabot.cn/)
+
+> *如果要部署建议把index.html里调用online.js和百度统计的去掉*

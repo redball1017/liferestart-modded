@@ -1,6 +1,6 @@
-import {max, sum} from './functions/util.js';
-import {summary} from './functions/summary.js';
-import Life from './life.js';
+import {max, sum} from './functions/util.js'
+import {summary} from './functions/summary.js'
+import Life from './life.js'
 
 class App {
     constructor() {
@@ -20,6 +20,7 @@ class App {
         this.switch('loading');
         await this.#life.initial();
         this.switch('index');
+        typeof online === "function" ? online() : false;
         window.onerror = (event, source, lineno, colno, error) => {
             this.hint(`[ERROR] at (${source}:${lineno}:${colno})\n\n${error?.stack || error || 'unknow Error'}`, 'error');
         }
@@ -41,6 +42,7 @@ class App {
         const indexPage = $(`
         <div id="main">
             <div id="cnt" class="head">已重开1次</div>
+            <div id="onlinecnt" class="headonline">当前在线：0人</div>
             <button id="rank">排行榜</button>
             <button id="themeToggleBtn">黑</button>
             <div id="title">
@@ -55,6 +57,7 @@ class App {
             <button id="restart" class="mainbtn"><span class="iconfont">&#xe6a7;</span>立即重开</button>
         </div>
         `);
+
         // Init theme
         this.setTheme(localStorage.getItem('theme'));
 
@@ -105,11 +108,13 @@ class App {
                     .forEach(talent => {
                         const li = createTalent(talent);
                         ul.append(li);
-                        this.#talentSelected.clear();
                         li.click(() => {
                             if (li.hasClass('selected')) {
                                 li.removeClass('selected')
                                 this.#talentSelected.delete(talent);
+                                if (this.#talentSelected.size < 3) {
+                                    talentPage.find('#next').text('请选择3个')
+                                }
                             } else {
                                 if (this.#talentSelected.size == 3) {
                                     this.hint('只能选3个天赋');
@@ -131,6 +136,9 @@ class App {
                                 }
                                 li.addClass('selected');
                                 this.#talentSelected.add(talent);
+                                if (this.#talentSelected.size == 3) {
+                                    talentPage.find('#next').text('开始新人生')
+                                }
                             }
                         });
                     });
@@ -190,18 +198,28 @@ class App {
             })
 
         // Property
-        const propertyPage = $(`
+        // hint of extension tobermory.es6-string-html
+        const propertyPage = $(/*html*/`
         <div id="main">
             <div class="head" style="font-size: 1.6rem">
                 调整初始属性<br>
                 <div id="total" style="font-size:1rem; font-weight:normal;">可用属性点：0</div>
             </div>
             <ul id="propertyAllocation" class="propinitial"></ul>
-            <button id="random" class="mainbtn" style="top:auto; bottom:7rem">随机分配</button>
-            <button id="start" class="mainbtn" style="top:auto; bottom:0.1rem">开始新人生</button>
+            <ul class="selectlist" id="talentSelectedView" style="top:calc(100% - 17rem); bottom:7rem"></ul>
+            <button id="random" class="mainbtn" style="top:auto; bottom:0.1rem; left:auto; right:50%; transform: translate(-2rem,-50%);">随机分配</button>
+            <button id="start" class="mainbtn" style="top:auto; bottom:0.1rem; left:50%; right:auto; transform: translate(1rem,-50%);">开始新人生</button>
         </div>
         `);
-
+        propertyPage.mounted = () => {
+            propertyPage
+                .find('#talentSelectedView').append(
+                `<li>已选天赋</li>` +
+                Array.from(this.#talentSelected)
+                    .map(({name, description}) => `<li class="grade0b">${name}(${description})</li>`)
+                    .join('')
+            )
+        }
         const groups = {};
         const total = () => {
             let t = 0;
@@ -234,6 +252,10 @@ class App {
                 freshTotal();
             }
             btnAdd.click(() => {
+                if (total() >= this.#totalMax) {
+                    this.hint('没有可分配的点数了');
+                    return;
+                }
                 set(get() + 1);
             });
             btnSub.click(() => set(get() - 1));
@@ -301,16 +323,22 @@ class App {
                 });
                 this.switch('trajectory');
                 this.#pages.trajectory.born();
+                $(document).keydown(function (event) {
+                    if (event.which == 32 || event.which == 13) {
+                        $('#lifeTrajectory').click();
+                    }
+                })
             });
 
         // Trajectory
         const trajectoryPage = $(`
         <div id="main">
+            <ul id="lifeProperty" class="lifeProperty"></ul>
             <ul id="lifeTrajectory" class="lifeTrajectory"></ul>
-            <button id="skip-slow" class="mainbtn" style="top:2.5rem;left: 8rem;">></button>
-            <button id="skip-fast" class="mainbtn" style="top:2.5rem;left: 14rem;">>></button>
-            <button id="stop-skip" class="mainbtn" style="top:2.5rem;left: 20rem;display: none;">停止</button>
-            <button id="summary" class="mainbtn" style="top: auto; bottom: 0.1rem;">人生总结</button>
+            <button id="skip-slow" class="mainbtn" style="top:auto; bottom:0.1rem; left:auto; right:50%; transform: translate(-2rem,-50%);">></button>
+            <button id="skip-fast" class="mainbtn" style="top:auto; bottom:0.1rem; left:50%; right:auto; transform: translate(1rem,-50%);">>></button>
+            <button id="stop-skip" class="mainbtn" style="top:auto; bottom: 0.1rem; display: none;">停止</button>
+            <button id="summary" class="mainbtn" style="top: auto; bottom: 0.1rem">人生总结</button>
         </div>
         `);
 
@@ -324,8 +352,8 @@ class App {
                     window.clearInterval(t2);
                     t1 = null;
                     t2 = null;
-                    trajectoryPage.find('#skip-slow').show()
-                    trajectoryPage.find('#skip-fast').show()
+                    trajectoryPage.find('#skip-slow').hide()
+                    trajectoryPage.find('#skip-fast').hide()
                     trajectoryPage.find('#stop-skip').hide()
                     return;
                 }
@@ -347,17 +375,30 @@ class App {
                 li.appendTo('#lifeTrajectory');
                 $("#lifeTrajectory").scrollTop($("#lifeTrajectory")[0].scrollHeight);
                 if (isEnd) {
+                    $(document).unbind("keydown");
                     this.#isEnd = true;
                     trajectoryPage.find('#summary').show();
+                    trajectoryPage.find('#skip-slow').hide();
+                    trajectoryPage.find('#skip-fast').hide();
+                } else {
+                    // 如未死亡，更新数值
+                    // Update properties if not die yet
+                    const property = this.#life.getLastRecord();
+                    $("#lifeProperty").html(`
+                    <li>颜值：${property.CHR} </li>
+                    <li>智力：${property.INT} </li>
+                    <li>体质：${property.STR} </li>
+                    <li>家境：${property.MNY} </li>
+                    <li>快乐：${property.SPR} </li>`);
                 }
             });
 
         trajectoryPage
             .find('#summary')
             .click(() => {
-                trajectoryPage.find('#skip-slow').show()
-                trajectoryPage.find('#skip-fast').show()
-                trajectoryPage.find('#stop-skip').hide()
+                trajectoryPage.find('#skip-slow').show();
+                trajectoryPage.find('#skip-fast').show();
+                trajectoryPage.find('#stop-skip').hide();
                 this.switch('summary');
             })
 
@@ -368,9 +409,9 @@ class App {
                     this.hint("人生已经结束了哦~");
                     return;
                 }
-                trajectoryPage.find('#skip-slow').hide()
-                trajectoryPage.find('#skip-fast').hide()
-                trajectoryPage.find('#stop-skip').show()
+                trajectoryPage.find('#skip-slow').hide();
+                trajectoryPage.find('#skip-fast').hide();
+                trajectoryPage.find('#stop-skip').show();
                 t1 = setInterval("$('#lifeTrajectory').click();", 500);
             })
 
@@ -473,6 +514,9 @@ class App {
                 page: propertyPage,
                 clear: () => {
                     freshTotal();
+                    propertyPage
+                        .find('#talentSelectedView')
+                        .empty();
                 },
             },
             trajectory: {
@@ -562,6 +606,9 @@ class App {
         $('#main').detach();
         p.clear();
         p.page.appendTo('body');
+        if (typeof p.page.mounted === 'function') {
+            p.page.mounted()
+        }
     }
 
     hint(message, type = 'info') {

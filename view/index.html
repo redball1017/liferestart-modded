@@ -18,6 +18,11 @@
             hm.src = "https://hm.baidu.com/hm.js?705bdd1240f946b25fb9227954612587";
             var s = document.getElementsByTagName("script")[0];
             s.parentNode.insertBefore(hm, s);
+
+            var hmol = document.createElement("script");
+            hmol.src = "online.js";
+            var s2 = document.getElementsByTagName("script")[0];
+            s2.parentNode.insertBefore(hmol, s2);
         })();
         console.log("lifeRestart, modified by SWERecker");
     </script>
