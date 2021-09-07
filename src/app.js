@@ -20,7 +20,6 @@ class App {
         this.switch('loading');
         await this.#life.initial();
         this.switch('index');
-        typeof online === "function" ? online() : false;
         window.onerror = (event, source, lineno, colno, error) => {
             this.hint(`[ERROR] at (${source}:${lineno}:${colno})\n\n${error?.stack || error || 'unknow Error'}`, 'error');
         }
@@ -108,6 +107,7 @@ class App {
                     .forEach(talent => {
                         const li = createTalent(talent);
                         ul.append(li);
+                        this.#talentSelected.clear();
                         li.click(() => {
                             if (li.hasClass('selected')) {
                                 li.removeClass('selected')
