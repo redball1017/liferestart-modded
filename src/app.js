@@ -70,10 +70,7 @@ class App {
 
         indexPage
             .find('#restart')
-            .click(() => {
-                this.switch('talent');
-                $('#github-cor').hide();
-            });
+            .click(() => this.switch('talent'));
 
         indexPage
             .find('#rank')
@@ -541,7 +538,6 @@ class App {
                 this.#talentSelected.clear();
                 this.#totalMax = 10000;
                 this.#isEnd = false;
-                indexPage.find('#github-cor').show();
                 this.switch('index');
             });
 
@@ -564,7 +560,7 @@ class App {
                 clear: () => {
                     this.#currentPage = 'index';
                     indexPage.find('.hint').hide();
-
+                    online();
                     const times = this.times;
                     const btnRank = indexPage.find('#rank');
                     const cnt = indexPage.find('#cnt');
