@@ -12,7 +12,6 @@ function online() {
             body: "key=" + key,
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         }).then(response => response.json()).then(resp => {
-            console.log(resp);
             $('#onlinecnt').html("当前在线：" + resp.count + "人");
         });
     });

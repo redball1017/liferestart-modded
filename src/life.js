@@ -50,34 +50,34 @@ class Life {
         const isEnd = this.#property.isEnd();
 
         const content = [talentContent, eventContent].flat();
-        return { age, content, isEnd };
+        return {age, content, isEnd};
     }
 
     doTalent(talents) {
-        if(talents) this.#property.change(this.#property.TYPES.TLT, talents);
+        if (talents) this.#property.change(this.#property.TYPES.TLT, talents);
         talents = this.#property.get(this.#property.TYPES.TLT)
             .filter(talentId => this.getTalentCurrentTriggerCount(talentId) < this.#talent.get(talentId).max_triggers);
 
         const contents = [];
-        for(const talentId of talents) {
+        for (const talentId of talents) {
             const result = this.#talent.do(talentId, this.#property);
-            if(!result) continue;
+            if (!result) continue;
             this.#triggerTalents[talentId] = this.getTalentCurrentTriggerCount(talentId) + 1;
-            const { effect, name, description, grade } = result;
+            const {effect, name, description, grade} = result;
             contents.push({
                 type: this.#property.TYPES.TLT,
                 name,
                 grade,
                 description,
             })
-            if(!effect) continue;
+            if (!effect) continue;
             this.#property.effect(effect);
         }
         return contents;
     }
 
     doEvent(eventId) {
-        const { effect, next, description, postEvent } = this.#event.do(eventId, this.#property);
+        const {effect, next, description, postEvent} = this.#event.do(eventId, this.#property);
         this.#property.change(this.#property.TYPES.EVT, eventId);
         this.#property.effect(effect);
         const content = {
@@ -85,30 +85,30 @@ class Life {
             description,
             postEvent,
         }
-        if(next) return [content, this.doEvent(next)].flat();
+        if (next) return [content, this.doEvent(next)].flat();
         return [content];
     }
 
     random(events) {
-        events = events.filter(([eventId])=>this.#event.check(eventId, this.#property));
+        events = events.filter(([eventId]) => this.#event.check(eventId, this.#property));
 
         let totalWeights = 0;
-        for(const [, weight] of events)
+        for (const [, weight] of events)
             totalWeights += weight;
 
         let random = Math.random() * totalWeights;
-        for(const [eventId, weight] of events)
-            if((random-=weight)<0)
+        for (const [eventId, weight] of events)
+            if ((random -= weight) < 0)
                 return eventId;
-        return events[events.length-1];
+        return events[events.length - 1];
     }
 
     talentRandom() {
-        return this.#talent.talentRandom(JSON.parse(localStorage.extendTalent||'null'));
+        return this.#talent.talentRandom(JSON.parse(localStorage.extendTalent || 'null'));
     }
-    
+
     talentAll() {
-        return this.#talent.talentAll(JSON.parse(localStorage.extendTalent||'null'));
+        return this.#talent.talentAll(JSON.parse(localStorage.extendTalent || 'null'));
     }
 
     talentExtend(talentId) {
@@ -125,6 +125,14 @@ class Life {
 
     exclusive(talents, exclusive) {
         return this.#talent.exclusive(talents, exclusive);
+    }
+
+    get times() {
+        return this.#property?.get(this.#property.TYPES.TMS) || 0;
+    }
+
+    set times(v) {
+        return this.#property?.set(this.#property.TYPES.TMS, v) || 0;
     }
 }
 

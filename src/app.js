@@ -9,6 +9,7 @@ class App {
 
     #life;
     #pages;
+    #currentPage;
     #talentSelected = new Set();
     #totalMax = 10000;
     #isEnd = false;
@@ -23,6 +24,14 @@ class App {
         window.onerror = (event, source, lineno, colno, error) => {
             this.hint(`[ERROR] at (${source}:${lineno}:${colno})\n\n${error?.stack || error || 'unknow Error'}`, 'error');
         }
+        const keyDownCallback = (keyboardEvent) => {
+            if (keyboardEvent.which === 13 || keyboardEvent.keyCode === 13) {
+                const pressEnterFunc = this.#pages[this.#currentPage]?.pressEnter;
+                pressEnterFunc && typeof pressEnterFunc === 'function' && pressEnterFunc();
+            }
+        }
+        window.removeEventListener('keydown', keyDownCallback);
+        window.addEventListener('keydown', keyDownCallback);
     }
 
     initPages() {
@@ -47,11 +56,10 @@ class App {
             <div id="title">
                 人生重开模拟器<br>
                 <div style="font-size:1.5rem; font-weight:normal;">这垃圾人生一秒也不想呆了</div>
-                <div style="font-size:1.5rem; font-weight:normal;">&nbsp;</div>
+                <div style="font-size:0.5rem; font-weight:normal;">&nbsp;</div>
 				<div style="font-size:1rem; font-weight:normal;"><a href="https://liferestart.syaro.io/view/">原版-></a></div>
-				<div style="font-size:1rem; font-weight:normal;"><a href="https://github.com/VickScarlet/lifeRestart">原作者Github-></a></div>
-				<div style="font-size:1rem; font-weight:normal;"><a href="https://github.com/SWERecker/lifeRestart">修改版Github-></a></div>
-				<div style="font-size:1rem; font-weight:normal;">此版本修改：限制10000初始属性<br>不强制全部使用+无限刷新天赋<br>可自选全部天赋<br>可以两种速度快进人生</div>
+				<div style="font-size:1rem; font-weight:normal;"><a href="https://github.com/VickScarlet/lifeRestart">原版Github-></a></div>
+				<div style="font-size:1rem; font-weight:normal;"><a id="modify" href="#">改动-></a></div>
             </div>
             <button id="restart" class="mainbtn"><span class="iconfont">&#xe6a7;</span>立即重开</button>
         </div>
@@ -71,16 +79,28 @@ class App {
             .find('#rank')
             .click(() => this.hint('别卷了！没有排行榜'));
 
+        if (localStorage.getItem('theme') == 'light') {
+            indexPage.find('#themeToggleBtn').text('黑')
+        } else {
+            indexPage.find('#themeToggleBtn').text('白')
+        }
+
+        indexPage
+            .find('#modify')
+            .click(() => this.hint('此版本修改：\n- 限制10000初始属性\n- 不强制全部使用+无限刷新天赋\n- 可自选全部天赋\n- 可以两种速度快进人生'));
+
         indexPage
             .find("#themeToggleBtn")
             .click(() => {
                 if (localStorage.getItem('theme') == 'light') {
                     localStorage.setItem('theme', 'dark');
+                    indexPage.find('#themeToggleBtn').text('白');
                 } else {
                     localStorage.setItem('theme', 'light');
+                    indexPage.find('#themeToggleBtn').text('黑');
                 }
 
-                this.setTheme(localStorage.getItem('theme'))
+                this.setTheme(localStorage.getItem('theme'));
             });
 
         // Talent
@@ -88,14 +108,16 @@ class App {
         <div id="main">
             <div class="head" style="font-size: 1.6rem">天赋抽卡</div>
             <ul id="talents" class="selectlist"></ul>
-            <button id="random" class="mainbtn" style="top: 80%;">10连抽！</button>
-            <button id="listall" class="mainbtn showall">显示全部</button>
-            <button id="next" class="mainbtn" style="top:auto; bottom:0.1em">请选择3个</button>
+            <div class="btn-area">
+                <button id="random" class="mainbtn">10连抽！</button>
+                <button id="listall" class="mainbtn">显示全部</button>
+            </div>
+            <button id="next" class="mainbtn">请选择3个</button>
         </div>
         `);
 
         const createTalent = ({grade, name, description}) => {
-            return $(`<li class="grade${grade}b">${name}（${description}）</li>`)
+            return $(`<li class="grade${grade}b">${name}（${description}）</li>`);
         };
 
         talentPage
@@ -103,17 +125,18 @@ class App {
             .click(() => {
                 const ul = talentPage.find('#talents');
                 ul.html('');
+                this.#talentSelected.clear();
+                talentPage.find('#next').text('请选择3个');
                 this.#life.talentRandom()
                     .forEach(talent => {
                         const li = createTalent(talent);
                         ul.append(li);
-                        this.#talentSelected.clear();
                         li.click(() => {
                             if (li.hasClass('selected')) {
-                                li.removeClass('selected')
+                                li.removeClass('selected');
                                 this.#talentSelected.delete(talent);
                                 if (this.#talentSelected.size < 3) {
-                                    talentPage.find('#next').text('请选择3个')
+                                    talentPage.find('#next').text('请选择3个');
                                 }
                             } else {
                                 if (this.#talentSelected.size == 3) {
@@ -142,6 +165,7 @@ class App {
                             }
                         });
                     });
+                talentPage.find('#next').show();
             });
 
         talentPage
@@ -149,7 +173,9 @@ class App {
             .click(() => {
                 const ul = talentPage.find('#talents');
                 talentPage.find('#random').hide();
+                talentPage.find('#listall').hide();
                 ul.html('');
+                talentPage.find('#next').text('请选择3个');
                 this.#life.talentAll()
                     .forEach(talent => {
                         const li = createTalent(talent);
@@ -160,6 +186,9 @@ class App {
                                 li.removeClass('selected')
                                 li.removeClass('selected')
                                 this.#talentSelected.delete(talent);
+                                if (this.#talentSelected.size < 3) {
+                                    talentPage.find('#next').text('请选择3个');
+                                }
                             } else {
                                 if (this.#talentSelected.size == 3) {
                                     this.hint('只能选3个天赋');
@@ -181,9 +210,13 @@ class App {
                                 }
                                 li.addClass('selected');
                                 this.#talentSelected.add(talent);
+                                if (this.#talentSelected.size == 3) {
+                                    talentPage.find('#next').text('开始新人生')
+                                }
                             }
                         });
                     });
+                talentPage.find('#next').show()
             });
 
         talentPage
@@ -202,13 +235,15 @@ class App {
         const propertyPage = $(/*html*/`
         <div id="main">
             <div class="head" style="font-size: 1.6rem">
-                调整初始属性<br>
+                <div>调整初始属性</div>
                 <div id="total" style="font-size:1rem; font-weight:normal;">可用属性点：0</div>
             </div>
             <ul id="propertyAllocation" class="propinitial"></ul>
-            <ul class="selectlist" id="talentSelectedView" style="top:calc(100% - 17rem); bottom:7rem"></ul>
-            <button id="random" class="mainbtn" style="top:auto; bottom:0.1rem; left:auto; right:50%; transform: translate(-2rem,-50%);">随机分配</button>
-            <button id="start" class="mainbtn" style="top:auto; bottom:0.1rem; left:50%; right:auto; transform: translate(1rem,-50%);">开始新人生</button>
+            <ul class="selectlist" id="talentSelectedView"></ul>
+            <div class="btn-area">
+                <button id="random" class="mainbtn">随机分配</button>
+                <button id="start" class="mainbtn">开始新人生</button>
+            </div>
         </div>
         `);
         propertyPage.mounted = () => {
@@ -323,11 +358,11 @@ class App {
                 });
                 this.switch('trajectory');
                 this.#pages.trajectory.born();
-                $(document).keydown(function (event) {
-                    if (event.which == 32 || event.which == 13) {
-                        $('#lifeTrajectory').click();
-                    }
-                })
+                // $(document).keydown(function(event){
+                //     if(event.which == 32 || event.which == 13){
+                //         $('#lifeTrajectory').click();
+                //     }
+                // })
             });
 
         // Trajectory
@@ -335,10 +370,16 @@ class App {
         <div id="main">
             <ul id="lifeProperty" class="lifeProperty"></ul>
             <ul id="lifeTrajectory" class="lifeTrajectory"></ul>
-            <button id="skip-slow" class="mainbtn" style="top:auto; bottom:0.1rem; left:auto; right:50%; transform: translate(-2rem,-50%);">></button>
-            <button id="skip-fast" class="mainbtn" style="top:auto; bottom:0.1rem; left:50%; right:auto; transform: translate(1rem,-50%);">>></button>
-            <button id="stop-skip" class="mainbtn" style="top:auto; bottom: 0.1rem; display: none;">停止</button>
-            <button id="summary" class="mainbtn" style="top: auto; bottom: 0.1rem">人生总结</button>
+            <div class="btn-area">
+                <button id="skip-slow" class="mainbtn">></button>
+                <button id="skip-fast" class="mainbtn">>></button>
+                <button id="stop-skip" class="mainbtn" style="display: none;">停止</button>
+                <button id="summary" class="mainbtn">人生总结</button>
+                <button id="domToImage" class="mainbtn">人生回放</button>
+            </div>
+            <div class="domToImage2wx">
+                <img src="" id="endImage" />
+            </div>
         </div>
         `);
 
@@ -352,15 +393,14 @@ class App {
                     window.clearInterval(t2);
                     t1 = null;
                     t2 = null;
-                    trajectoryPage.find('#skip-slow').hide()
-                    trajectoryPage.find('#skip-fast').hide()
-                    trajectoryPage.find('#stop-skip').hide()
+                    trajectoryPage.find('#skip-slow').hide();
+                    trajectoryPage.find('#skip-fast').hide();
+                    trajectoryPage.find('#stop-skip').hide();
                     return;
                 }
                 const trajectory = this.#life.next();
                 const {age, content, isEnd} = trajectory;
-
-                const li = $(`<li><span>${age}岁：</span>${
+                const li = $(`<li><span>${age}岁：</span><span>${
                     content.map(
                         ({type, description, grade, name, postEvent}) => {
                             switch (type) {
@@ -371,13 +411,14 @@ class App {
                             }
                         }
                     ).join('<br>')
-                }</li>`);
+                }</span></li>`);
                 li.appendTo('#lifeTrajectory');
                 $("#lifeTrajectory").scrollTop($("#lifeTrajectory")[0].scrollHeight);
                 if (isEnd) {
                     $(document).unbind("keydown");
                     this.#isEnd = true;
                     trajectoryPage.find('#summary').show();
+                    trajectoryPage.find('#domToImage').show();
                     trajectoryPage.find('#skip-slow').hide();
                     trajectoryPage.find('#skip-fast').hide();
                 } else {
@@ -385,13 +426,44 @@ class App {
                     // Update properties if not die yet
                     const property = this.#life.getLastRecord();
                     $("#lifeProperty").html(`
-                    <li>颜值：${property.CHR} </li>
-                    <li>智力：${property.INT} </li>
-                    <li>体质：${property.STR} </li>
-                    <li>家境：${property.MNY} </li>
-                    <li>快乐：${property.SPR} </li>`);
+                    <li><span>颜值</span><span>${property.CHR}</span></li>
+                    <li><span>智力</span><span>${property.INT}</span></li>
+                    <li><span>体质</span><span>${property.STR}</span></li>
+                    <li><span>家境</span><span>${property.MNY}</span></li>
+                    <li><span>快乐</span><span>${property.SPR}</span></li>
+                    `);
                 }
             });
+        // html2canvas
+        trajectoryPage
+            .find('#domToImage')
+            .click(() => {
+                window.clearInterval(t1);
+                window.clearInterval(t2);
+                if (this.#isEnd) {
+                    trajectoryPage.find('#skip-slow').hide()
+                    trajectoryPage.find('#skip-fast').hide()
+                    trajectoryPage.find('#stop-skip').hide()
+                }else {
+                    trajectoryPage.find('#skip-slow').show()
+                    trajectoryPage.find('#skip-fast').show()
+                    trajectoryPage.find('#stop-skip').hide()
+                }
+                $("#lifeTrajectory").addClass("deleteFixed");
+                const ua = navigator.userAgent.toLowerCase();
+                domtoimage.toJpeg(document.getElementById('lifeTrajectory'))
+                    .then(function (dataUrl) {
+                        let link = document.createElement('a');
+                        link.download = '我的人生回放.jpeg';
+                        link.href = dataUrl;
+                        link.click();
+                        $("#lifeTrajectory").removeClass("deleteFixed");
+                        // 微信内置浏览器，显示图片，需要用户单独保存
+                        if (ua.match(/MicroMessenger/i) == "micromessenger") {
+                            $('#endImage').attr('src', dataUrl);
+                        }
+                    });
+            })
 
         trajectoryPage
             .find('#summary')
@@ -444,19 +516,19 @@ class App {
         const summaryPage = $(`
         <div id="main">
             <div class="head">人生总结</div>
-            <ul id="judge" class="judge" style="bottom: calc(35% + 2.5rem)">
-                <li class="grade2"><span>颜值：</span>9级 美若天仙</li>
-                <li><span>智力：</span>4级 智力一般</li>
-                <li><span>体质：</span>1级 极度虚弱</li>
-                <li><span>家境：</span>6级 小康之家</li>
-                <li><span>享年：</span>3岁 早夭</li>
-                <li><span>快乐：</span>3级 不太幸福的人生</li>
+            <ul id="judge" class="judge">
+                <li class="grade2"><span>颜值：</span><span>9级 美若天仙</span></li>
+                <li class="grade0"><span>智力：</span><span>4级 智力一般</span></li>
+                <li class="grade0"><span>体质：</span><span>1级 极度虚弱</span></li>
+                <li class="grade0"><span>家境：</span><span>6级 小康之家</span></li>
+                <li class="grade0"><span>享年：</span><span>3岁 早夭</span></li>
+                <li class="grade0"><span>快乐：</span><span></span>3级 不太幸福的人生</li>
             </ul>
-            <div class="head" style="top:auto; bottom:35%">天赋，你可以选一个，下辈子还能抽到</div>
-            <ul id="talents" class="selectlist" style="top:calc(65% + 0.5rem); bottom:8rem">
+            <div class="head" style="height:auto;">天赋，你可以选一个，下辈子还能抽到</div>
+            <ul id="talents" class="selectlist" style="flex: 0 1 auto;">
                 <li class="grade2b">黑幕（面试一定成功）</li>
             </ul>
-            <button id="again" class="mainbtn" style="top:auto; bottom:0.1em"><span class="iconfont">&#xe6a7;</span>再次重开</button>
+            <button id="again" class="mainbtn"><span class="iconfont">&#xe6a7;</span>再次重开</button>
         </div>
         `);
 
@@ -469,7 +541,7 @@ class App {
                 this.#talentSelected.clear();
                 this.#totalMax = 10000;
                 this.#isEnd = false;
-                $('#github-cor').show();
+                indexPage.find('#github-cor').show();
                 this.switch('index');
             });
 
@@ -477,6 +549,7 @@ class App {
             loading: {
                 page: loadingPage,
                 clear: () => {
+                    this.#currentPage = 'loading';
                 },
             },
             index: {
@@ -485,7 +558,11 @@ class App {
                 btnRestart: indexPage.find('#restart'),
                 hint: indexPage.find('.hint'),
                 cnt: indexPage.find('#cnt'),
+                pressEnter: () => {
+                    this.#pages.index.btnRestart.click();
+                },
                 clear: () => {
+                    this.#currentPage = 'index';
                     indexPage.find('.hint').hide();
 
                     const times = this.times;
@@ -504,15 +581,35 @@ class App {
             },
             talent: {
                 page: talentPage,
+                talentList: talentPage.find('#talents'),
+                btnRandom: talentPage.find('#random'),
+                btnNext: talentPage.find('#next'),
+                pressEnter: () => {
+                    const talentList = this.#pages.talent.talentList;
+                    const btnRandom = this.#pages.talent.btnRandom;
+                    const btnNext = this.#pages.talent.btnNext;
+                    if (talentList.children().length) {
+                        btnNext.click();
+                    } else {
+                        btnRandom.click();
+                    }
+                },
                 clear: () => {
+                    this.#currentPage = 'talent';
                     talentPage.find('ul.selectlist').empty();
                     talentPage.find('#random').show();
+                    talentPage.find('#listall').show();
                     this.#totalMax = 10000;
                 },
             },
             property: {
                 page: propertyPage,
+                btnStart: propertyPage.find('#start'),
+                pressEnter: () => {
+                    this.#pages.property.btnStart.click();
+                },
                 clear: () => {
+                    this.#currentPage = 'property';
                     freshTotal();
                     propertyPage
                         .find('#talentSelectedView')
@@ -521,7 +618,12 @@ class App {
             },
             trajectory: {
                 page: trajectoryPage,
+                lifeTrajectory: trajectoryPage.find('#lifeTrajectory'),
+                pressEnter: () => {
+                    this.#pages.trajectory.lifeTrajectory.click();
+                },
                 clear: () => {
+                    this.#currentPage = 'trajectory';
                     trajectoryPage.find('#lifeTrajectory').empty();
                     trajectoryPage.find('#summary').hide();
                     this.#isEnd = false;
@@ -533,6 +635,7 @@ class App {
             summary: {
                 page: summaryPage,
                 clear: () => {
+                    this.#currentPage = 'summary';
                     const judge = summaryPage.find('#judge');
                     const talents = summaryPage.find('#talents');
                     judge.empty();
@@ -560,43 +663,41 @@ class App {
                         const {judge, grade} = summary(type, value);
                         return {judge, grade, value};
                     };
-                    console.table(records);
-                    console.debug(records);
 
                     judge.append([
                         (() => {
                             const {judge, grade, value} = s('CHR', max);
-                            return `<li class="grade${grade}"><span>颜值：</span>${value} ${judge}</li>`
+                            return `<li class="grade${grade}"><span>颜值：</span><span>${value} ${judge}</span></li>`
                         })(),
                         (() => {
                             const {judge, grade, value} = s('INT', max);
-                            return `<li class="grade${grade}"><span>智力：</span>${value} ${judge}</li>`
+                            return `<li class="grade${grade}"><span>智力：</span><span>${value} ${judge}</span></li>`
                         })(),
                         (() => {
                             const {judge, grade, value} = s('STR', max);
-                            return `<li class="grade${grade}"><span>体质：</span>${value} ${judge}</li>`
+                            return `<li class="grade${grade}"><span>体质：</span><span>${value} ${judge}</span></li>`
                         })(),
                         (() => {
                             const {judge, grade, value} = s('MNY', max);
-                            return `<li class="grade${grade}"><span>家境：</span>${value} ${judge}</li>`
+                            return `<li class="grade${grade}"><span>家境：</span><span>${value} ${judge}</span></li>`
                         })(),
                         (() => {
                             const {judge, grade, value} = s('SPR', max);
-                            return `<li class="grade${grade}"><span>快乐：</span>${value} ${judge}</li>`
+                            return `<li class="grade${grade}"><span>快乐：</span><span>${value} ${judge}</span></li>`
                         })(),
                         (() => {
                             const {judge, grade, value} = s('AGE', max);
-                            return `<li class="grade${grade}"><span>享年：</span>${value} ${judge}</li>`
+                            return `<li class="grade${grade}"><span>享年：</span><span>${value} ${judge}</span></li>`
                         })(),
                         (() => {
                             const m = type => max(records.map(({[type]: value}) => value));
                             const value = Math.floor(sum(m('CHR'), m('INT'), m('STR'), m('MNY'), m('SPR')) * 2 + m('AGE') / 2);
                             const {judge, grade} = summary('SUM', value);
-                            return `<li class="grade${grade}"><span>总评：</span>${value} ${judge}</li>`
+                            return `<li class="grade${grade}"><span>总评：</span><span>${value} ${judge}</span></li>`
                         })(),
                     ].join(''));
                 }
-            }
+            },
         }
     }
 
@@ -638,11 +739,11 @@ class App {
     }
 
     get times() {
-        return JSON.parse(localStorage.times || '0') || 0;
+        return this.#life?.times || 0;
     }
 
     set times(v) {
-        localStorage.times = JSON.stringify(parseInt(v) || 0)
+        if (this.#life) this.#life.times = v
     };
 
 }
