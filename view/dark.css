@@ -321,7 +321,7 @@ body {
 .headonline {
     position: fixed;
     font-size: 1rem;
-    top: 3.5rem;
+    top: 1.5rem;
     left: 50%;
     white-space: nowrap;
     transform: translateX(-50%);
@@ -342,7 +342,9 @@ a, a:hover, a:visited {
     -moz-osx-font-smoothing: grayscale;
 }
 
-#rank {
+#rank,
+#specialthanks,
+#achievement {
     position: fixed;
     top: 1rem;
     right: 1rem;
@@ -356,6 +358,57 @@ a, a:hover, a:visited {
     cursor: pointer;
     z-index: 2;
     word-wrap: none;
+}
+
+#specialthanks {
+    background-color: #5865F2;
+    top: 1rem;
+}
+
+#rank {
+    position: absolute;
+    top: 50%;
+    right: 1.5rem;
+    transform: translateY(-50%);
+}
+
+.title {
+    color: white;
+    position: relative;
+    font-size: 1.5rem;
+    font-weight: 700;
+    padding: 1rem;
+}
+
+ul#total,
+#achievements {
+    list-style-type: none;
+    display: grid;
+    justify-items: center;
+    grid-template-columns: 50% 50%;
+    grid-auto-columns: max-content;
+    justify-content: center;
+}
+
+ul#total li,
+#achievements li {
+    position: relative;
+    color: white;
+    display: inline-grid;
+    margin: 0.5rem;
+    width: 12rem;
+    height: 6rem;
+    align-items: center;
+}
+
+ul#total li .achievementtitle,
+#achievements li .achievementtitle {
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+#achievements {
+    overflow: scroll;
 }
 
 #themeToggleBtn {
@@ -435,24 +488,40 @@ a, a:hover, a:visited {
     margin-bottom: 0;
 }
 
+.achvg0,
 .grade0b {
     background-color: #464646;
     border: #f8f8f8 2px solid !important;
 }
 
+.achvg1,
 .grade1b {
     background-color: #6495ed;
     border: #f8f8f8 2px solid !important;
 }
 
+.achvg2,
 .grade2b {
     background-color: #e2a7ff;
     border: #f8f8f8 2px solid !important;
 }
 
+.achvg3,
 .grade3b {
     background-color: #ffa07a;
     border: #f8f8f8 2px solid !important;
+}
+
+.mask::before {
+    display: block;
+    content: "　";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    opacity: 0.5;
 }
 
 @media (any-hover: hover) {
@@ -481,28 +550,59 @@ a, a:hover, a:visited {
     }
 }
 
-.grade0b.selected {
-    background-color: #c0c0c0 !important;
+.grade0b.selected,
+.grade1b.selected,
+.grade2b.selected,
+.grade3b.selected {
     box-shadow: #ccc 0px 0px 10px;
     color: #3b3b3b;
+    overflow: hidden;
+}
+
+.grade0b.selected::after,
+.grade1b.selected::after,
+.grade2b.selected::after,
+.grade3b.selected::after {
+    content: '';
+    position: absolute;
+    background-color: #000;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    box-shadow: 0 0 10px #000;
+    opacity: 0;
+    animation: blink 3s linear infinite;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 0;
+        transform: translateX(-150%);
+    }
+    50% {
+        opacity: .2;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(150%);
+    }
+}
+
+.grade0b.selected {
+    background-color: #c0c0c0 !important;
 }
 
 .grade1b.selected {
     background-color: #87cefa !important;
-    box-shadow: #ccc 0px 0px 10px;
-    color: #3b3b3b;
 }
 
 .grade2b.selected {
     background-color: #e7beff !important;
-    box-shadow: #ccc 0px 0px 10px;
-    color: #3b3b3b;
 }
 
 .grade3b.selected {
     background-color: #f1bfac !important;
-    box-shadow: #ccc 0px 0px 10px;
-    color: #3b3b3b;
 }
 
 .propinitial {

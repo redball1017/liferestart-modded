@@ -1,6 +1,6 @@
-import {max, sum} from './functions/util.js'
-import {summary} from './functions/summary.js'
-import Life from './life.js'
+import {summary} from './functions/summary.js';
+import {getRate, getGrade} from './functions/addition.js';
+import Life from './life.js';
 
 class App {
     constructor() {
@@ -19,9 +19,11 @@ class App {
     async initial() {
         this.initPages();
         this.switch('loading');
-        await this.#life.initial();
+        await Promise.all([
+            this.#life.initial()
+        ]);
         this.switch('index');
-        window.onerror = (event, source, lineno, colno, error) => {
+        globalThis.onerror = (event, source, lineno, colno, error) => {
             this.hint(`[ERROR] at (${source}:${lineno}:${colno})\n\n${error?.stack || error || 'unknow Error'}`, 'error');
         }
         const keyDownCallback = (keyboardEvent) => {
@@ -30,8 +32,8 @@ class App {
                 pressEnterFunc && typeof pressEnterFunc === 'function' && pressEnterFunc();
             }
         }
-        window.removeEventListener('keydown', keyDownCallback);
-        window.addEventListener('keydown', keyDownCallback);
+        globalThis.removeEventListener('keydown', keyDownCallback);
+        globalThis.addEventListener('keydown', keyDownCallback);
     }
 
     initPages() {
@@ -49,9 +51,9 @@ class App {
         // Index
         const indexPage = $(`
         <div id="main">
-            <div id="cnt" class="head">已重开1次</div>
             <div id="onlinecnt" class="headonline">当前在线：0人</div>
-            <button id="rank">排行榜</button>
+            <!--<button id="rank">排行榜</button>-->
+            <button id="achievement">成就</button>
             <button id="themeToggleBtn">黑</button>
             <div id="title">
                 人生重开模拟器<br>
@@ -73,8 +75,8 @@ class App {
             .click(() => this.switch('talent'));
 
         indexPage
-            .find('#rank')
-            .click(() => this.hint('别卷了！没有排行榜'));
+            .find('#achievement')
+            .click(() => this.switch('achievement'));
 
         if (localStorage.getItem('theme') == 'light') {
             indexPage.find('#themeToggleBtn').text('黑')
@@ -100,6 +102,23 @@ class App {
                 this.setTheme(localStorage.getItem('theme'));
             });
 
+        const achievementPage = $(`
+        <div id="main">
+            <button id="specialthanks">返回</button>
+            <span class="title">统计</span>
+            <ul id="total"></ul>
+            <span style="padding:0.25rem; margin: 0.5rem 0; border: none; background: #ccc;"></span>
+            <span class="title">成就<button id="rank">排行榜</button></span>
+            <ul id="achievements"></ul>
+        `);
+
+        achievementPage
+            .find('#specialthanks')
+            .click(() => this.switch('index'));
+
+        achievementPage
+            .find('#rank')
+            .click(() => this.hint('别卷了，没有排行榜'));
         // Talent
         const talentPage = $(`
         <div id="main">
@@ -157,7 +176,7 @@ class App {
                                 li.addClass('selected');
                                 this.#talentSelected.add(talent);
                                 if (this.#talentSelected.size == 3) {
-                                    talentPage.find('#next').text('开始新人生')
+                                    talentPage.find('#next').text('开始新人生');
                                 }
                             }
                         });
@@ -168,20 +187,19 @@ class App {
         talentPage
             .find('#listall')
             .click(() => {
-                const ul = talentPage.find('#talents');
                 talentPage.find('#random').hide();
                 talentPage.find('#listall').hide();
-                ul.html('');
+                const ul = talentPage.find('#talents');
                 talentPage.find('#next').text('请选择3个');
+                ul.html('');
+                this.#talentSelected.clear();
                 this.#life.talentAll()
                     .forEach(talent => {
                         const li = createTalent(talent);
                         ul.append(li);
-                        this.#talentSelected.clear();
                         li.click(() => {
                             if (li.hasClass('selected')) {
-                                li.removeClass('selected')
-                                li.removeClass('selected')
+                                li.removeClass('selected');
                                 this.#talentSelected.delete(talent);
                                 if (this.#talentSelected.size < 3) {
                                     talentPage.find('#next').text('请选择3个');
@@ -208,12 +226,12 @@ class App {
                                 li.addClass('selected');
                                 this.#talentSelected.add(talent);
                                 if (this.#talentSelected.size == 3) {
-                                    talentPage.find('#next').text('开始新人生')
+                                    talentPage.find('#next').text('开始新人生');
                                 }
                             }
                         });
                     });
-                talentPage.find('#next').show()
+                talentPage.find('#next').show();
             });
 
         talentPage
@@ -223,6 +241,7 @@ class App {
                     this.hint('请选择3个天赋');
                     return;
                 }
+                talentPage.find('#next').hide();
                 this.#totalMax = 10000 + this.#life.getTalentAllocationAddition(Array.from(this.#talentSelected).map(({id}) => id));
                 this.switch('property');
             })
@@ -393,6 +412,7 @@ class App {
                     trajectoryPage.find('#skip-slow').hide();
                     trajectoryPage.find('#skip-fast').hide();
                     trajectoryPage.find('#stop-skip').hide();
+                    trajectoryPage.find('#domToImage').show();
                     return;
                 }
                 const trajectory = this.#life.next();
@@ -418,34 +438,20 @@ class App {
                     trajectoryPage.find('#domToImage').show();
                     trajectoryPage.find('#skip-slow').hide();
                     trajectoryPage.find('#skip-fast').hide();
-                } else {
-                    // 如未死亡，更新数值
-                    // Update properties if not die yet
-                    const property = this.#life.getLastRecord();
-                    $("#lifeProperty").html(`
-                    <li><span>颜值</span><span>${property.CHR}</span></li>
-                    <li><span>智力</span><span>${property.INT}</span></li>
-                    <li><span>体质</span><span>${property.STR}</span></li>
-                    <li><span>家境</span><span>${property.MNY}</span></li>
-                    <li><span>快乐</span><span>${property.SPR}</span></li>
-                    `);
                 }
+                const property = this.#life.getLastRecord();
+                $("#lifeProperty").html(`
+                <li><span>颜值</span><span>${property.CHR}</span></li>
+                <li><span>智力</span><span>${property.INT}</span></li>
+                <li><span>体质</span><span>${property.STR}</span></li>
+                <li><span>家境</span><span>${property.MNY}</span></li>
+                <li><span>快乐</span><span>${property.SPR}</span></li>
+                `);
             });
         // html2canvas
         trajectoryPage
             .find('#domToImage')
             .click(() => {
-                window.clearInterval(t1);
-                window.clearInterval(t2);
-                if (this.#isEnd) {
-                    trajectoryPage.find('#skip-slow').hide()
-                    trajectoryPage.find('#skip-fast').hide()
-                    trajectoryPage.find('#stop-skip').hide()
-                }else {
-                    trajectoryPage.find('#skip-slow').show()
-                    trajectoryPage.find('#skip-fast').show()
-                    trajectoryPage.find('#stop-skip').hide()
-                }
                 $("#lifeTrajectory").addClass("deleteFixed");
                 const ua = navigator.userAgent.toLowerCase();
                 domtoimage.toJpeg(document.getElementById('lifeTrajectory'))
@@ -461,6 +467,7 @@ class App {
                         }
                     });
             })
+            .hide();
 
         trajectoryPage
             .find('#summary')
@@ -469,7 +476,7 @@ class App {
                 trajectoryPage.find('#skip-fast').show();
                 trajectoryPage.find('#stop-skip').hide();
                 this.switch('summary');
-            })
+            });
 
         trajectoryPage
             .find('#skip-slow')
@@ -550,10 +557,9 @@ class App {
             },
             index: {
                 page: indexPage,
-                btnRank: indexPage.find('#rank'),
+                btnAchievement: indexPage.find('#achievement'),
                 btnRestart: indexPage.find('#restart'),
                 hint: indexPage.find('.hint'),
-                cnt: indexPage.find('#cnt'),
                 pressEnter: () => {
                     this.#pages.index.btnRestart.click();
                 },
@@ -562,18 +568,88 @@ class App {
                     indexPage.find('.hint').hide();
                     online();
                     const times = this.times;
-                    const btnRank = indexPage.find('#rank');
-                    const cnt = indexPage.find('#cnt');
+                    const achievement = indexPage.find('#achievement');
                     if (times > 0) {
-                        btnRank.show();
-                        cnt.show();
-                        cnt.text(`已重开${times}次`);
+                        achievement.show();
                         return;
                     }
 
-                    btnRank.hide();
-                    cnt.hide();
+                    achievement.hide();
                 },
+            },
+            achievement: {
+                page: achievementPage,
+                clear: () => {
+                    const total = achievementPage.find("ul#total");
+                    const achievements = achievementPage.find("ul#achievements");
+                    total.empty();
+                    achievements.empty();
+
+                    const formatRate = (type, value) => {
+                        const rate = getRate(type, value);
+                        let color = Object.keys(rate)[0];
+                        switch (parseInt(color)) {
+                            case 0:
+                                color = '白色';
+                                break;
+                            case 1:
+                                color = '蓝色';
+                                break;
+                            case 2:
+                                color = '紫色';
+                                break;
+                            case 3:
+                                color = '橙色';
+                                break;
+                            default:
+                                break;
+                        }
+                        let r = Object.values(rate)[0];
+                        switch (parseInt(r)) {
+                            case 1:
+                                r = '不变';
+                                break;
+                            case 2:
+                                r = '翻倍';
+                                break;
+                            case 3:
+                                r = '三倍';
+                                break;
+                            case 4:
+                                r = '四倍';
+                                break;
+                            case 5:
+                                r = '五倍';
+                                break;
+                            case 6:
+                                r = '六倍';
+                                break;
+                            default:
+                                break;
+                        }
+                        return `抽到${color}概率${r}`;
+                    }
+
+                    const {times, achievement, talentRate, eventRate} = this.#life.getTotal();
+                    total.append(`
+                        <li class="achvg${getGrade('times', times)}"><span class="achievementtitle">已重开${times}次</span>${formatRate('times', times)}</li>
+                        <li class="achvg${getGrade('achievement', achievement)}"><span class="achievementtitle">成就达成${achievement}个</span>${formatRate('achievement', achievement)}</li>
+                        <li class="achvg${getGrade('eventRate', eventRate)}"><span class="achievementtitle">事件收集率</span>${Math.floor(eventRate * 100)}%</li>
+                        <li class="achvg${getGrade('talentRate', talentRate)}"><span class="achievementtitle">天赋收集率</span>${Math.floor(talentRate * 100)}%</li>
+                    `);
+
+                    const achievementsData = this.#life.getAchievements();
+                    achievementsData.forEach(({
+                                                  name, description, hide,
+                                                  grade, isAchieved
+                                              }) => {
+                        if (hide && !isAchieved) name = description = '???';
+                        achievements.append(
+                            `<li class="achvg${grade} ${isAchieved ? '' : 'mask'}"><span class="achievementtitle">${name}</span>${description}</li>`
+                        );
+                    })
+
+                }
             },
             talent: {
                 page: talentPage,
@@ -622,6 +698,9 @@ class App {
                     this.#currentPage = 'trajectory';
                     trajectoryPage.find('#lifeTrajectory').empty();
                     trajectoryPage.find('#summary').hide();
+                    trajectoryPage.find('#skip-fast').show();
+                    trajectoryPage.find('#skip-slow').show();
+                    trajectoryPage.find('#domToImage').hide();
                     this.#isEnd = false;
                 },
                 born: () => {
@@ -636,65 +715,58 @@ class App {
                     const talents = summaryPage.find('#talents');
                     judge.empty();
                     talents.empty();
-                    this.#talentSelected.forEach(talent => {
-                        const li = createTalent(talent);
-                        talents.append(li);
-                        li.click(() => {
-                            if (li.hasClass('selected')) {
-                                this.#selectedExtendTalent = null;
-                                li.removeClass('selected');
-                            } else if (this.#selectedExtendTalent != null) {
-                                this.hint('只能继承一个天赋');
-                                return;
-                            } else {
-                                this.#selectedExtendTalent = talent.id;
-                                li.addClass('selected');
-                            }
+                    const lastExtendTalent = this.#life.getLastExtendTalent();
+                    Array
+                        .from(this.#talentSelected)
+                        .sort((
+                            {id: a, grade: ag},
+                            {id: b, grade: bg},
+                        ) => {
+                            if (a == lastExtendTalent) return -1;
+                            if (b == lastExtendTalent) return 1;
+                            return bg - ag;
+                        })
+                        .forEach((talent, i) => {
+                            const li = createTalent(talent);
+                            talents.append(li);
+                            li.click(() => {
+                                if (li.hasClass('selected')) {
+                                    this.#selectedExtendTalent = null;
+                                    li.removeClass('selected');
+                                } else if (this.#selectedExtendTalent != null) {
+                                    this.hint('只能继承一个天赋');
+                                    return;
+                                } else {
+                                    this.#selectedExtendTalent = talent.id;
+                                    li.addClass('selected');
+                                }
+                            });
+                            if (!i) li.click();
                         });
-                    });
 
-                    const records = this.#life.getRecord();
-                    const s = (type, func) => {
-                        const value = func(records.map(({[type]: v}) => v));
+                    const summaryData = this.#life.getSummary();
+                    const format = (discription, type) => {
+                        const value = summaryData[type];
                         const {judge, grade} = summary(type, value);
-                        return {judge, grade, value};
+                        return `<li class="grade${grade}"><span>${discription}：</span><span>${value} ${judge}</span></li>`;
                     };
 
-                    judge.append([
-                        (() => {
-                            const {judge, grade, value} = s('CHR', max);
-                            return `<li class="grade${grade}"><span>颜值：</span><span>${value} ${judge}</span></li>`
-                        })(),
-                        (() => {
-                            const {judge, grade, value} = s('INT', max);
-                            return `<li class="grade${grade}"><span>智力：</span><span>${value} ${judge}</span></li>`
-                        })(),
-                        (() => {
-                            const {judge, grade, value} = s('STR', max);
-                            return `<li class="grade${grade}"><span>体质：</span><span>${value} ${judge}</span></li>`
-                        })(),
-                        (() => {
-                            const {judge, grade, value} = s('MNY', max);
-                            return `<li class="grade${grade}"><span>家境：</span><span>${value} ${judge}</span></li>`
-                        })(),
-                        (() => {
-                            const {judge, grade, value} = s('SPR', max);
-                            return `<li class="grade${grade}"><span>快乐：</span><span>${value} ${judge}</span></li>`
-                        })(),
-                        (() => {
-                            const {judge, grade, value} = s('AGE', max);
-                            return `<li class="grade${grade}"><span>享年：</span><span>${value} ${judge}</span></li>`
-                        })(),
-                        (() => {
-                            const m = type => max(records.map(({[type]: value}) => value));
-                            const value = Math.floor(sum(m('CHR'), m('INT'), m('STR'), m('MNY'), m('SPR')) * 2 + m('AGE') / 2);
-                            const {judge, grade} = summary('SUM', value);
-                            return `<li class="grade${grade}"><span>总评：</span><span>${value} ${judge}</span></li>`
-                        })(),
-                    ].join(''));
+                    judge.append(`
+                        ${format('颜值', 'CHR')}
+                        ${format('智力', 'INT')}
+                        ${format('体质', 'STR')}
+                        ${format('家境', 'MNY')}
+                        ${format('快乐', 'SPR')}
+                        ${format('享年', 'AGE')}
+                        ${format('总评', 'SUM')}
+                    `);
                 }
             },
         }
+
+        $$on('achievement', ({name}) => {
+            this.hint(`解锁成就【${name}】`, 'success');
+        })
     }
 
     switch(page) {

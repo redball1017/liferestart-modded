@@ -19,4 +19,4 @@ function online() {
 
 setInterval(function () {
     online();
-}, 30000);
+}, 10000);

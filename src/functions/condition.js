@@ -8,16 +8,17 @@ function parseCondition(condition) {
     const catchString = i => {
         const str = condition.substring(cursor, i).trim();
         cursor = i;
-        if(str) stack[0].push(str);
+        if (str) stack[0].push(str);
     };
 
-    for(let i=0; i<length; i++) {
-        switch(condition[i]) {
-            case ' ': continue;
+    for (let i = 0; i < length; i++) {
+        switch (condition[i]) {
+            case ' ':
+                continue;
 
             case '(':
                 catchString(i);
-                cursor ++;
+                cursor++;
                 const sub = [];
                 stack[0].push(sub);
                 stack.unshift(sub);
@@ -25,16 +26,17 @@ function parseCondition(condition) {
 
             case ')':
                 catchString(i);
-                cursor ++;
+                cursor++;
                 stack.shift();
                 break;
 
             case '|':
             case '&':
                 catchString(i);
-                catchString(i+1);
+                catchString(i + 1);
                 break;
-            default: continue;
+            default:
+                continue;
         }
     }
 
@@ -49,21 +51,22 @@ function checkCondition(property, condition) {
 }
 
 function checkParsedConditions(property, conditions) {
-    if(!Array.isArray(conditions)) return checkProp(property, conditions);
-    if(conditions.length == 0) return true;
-    if(conditions.length == 1) return checkParsedConditions(property, conditions[0]);
+    if (!Array.isArray(conditions)) return checkProp(property, conditions);
+    if (conditions.length == 0) return true;
+    if (conditions.length == 1) return checkParsedConditions(property, conditions[0]);
 
     let ret = checkParsedConditions(property, conditions[0]);
-    for(let i=1; i<conditions.length; i+=2) {
-        switch(conditions[i]) {
+    for (let i = 1; i < conditions.length; i += 2) {
+        switch (conditions[i]) {
             case '&':
-                if(ret) ret = checkParsedConditions(property, conditions[i+1]);
+                if (ret) ret = checkParsedConditions(property, conditions[i + 1]);
                 break;
             case '|':
-                if(ret) return true;
-                ret = checkParsedConditions(property, conditions[i+1]);
+                if (ret) return true;
+                ret = checkParsedConditions(property, conditions[i + 1]);
                 break;
-            default: return false;
+            default:
+                return false;
         }
     }
     return ret;
@@ -74,42 +77,47 @@ function checkProp(property, condition) {
     const length = condition.length;
     let i = condition.search(/[><\!\?=]/);
 
-    const prop = condition.substring(0,i);
-    const symbol = condition.substring(i, i+=(condition[i+1]=='='?2:1));
+    const prop = condition.substring(0, i);
+    const symbol = condition.substring(i, i += (condition[i + 1] == '=' ? 2 : 1));
     const d = condition.substring(i, length);
 
     const propData = property.get(prop);
-    const conditionData = d[0]=='['? JSON.parse(d): Number(d);
+    const conditionData = d[0] == '[' ? JSON.parse(d) : Number(d);
 
-    switch(symbol) {
-        case '>':  return propData >  conditionData;
-        case '<':  return propData <  conditionData;
-        case '>=': return propData >= conditionData;
-        case '<=': return propData <= conditionData;
+    switch (symbol) {
+        case '>':
+            return propData > conditionData;
+        case '<':
+            return propData < conditionData;
+        case '>=':
+            return propData >= conditionData;
+        case '<=':
+            return propData <= conditionData;
         case '=':
-            if(Array.isArray(propData))
+            if (Array.isArray(propData))
                 return propData.includes(conditionData);
             return propData == conditionData;
         case '!=':
-            if(Array.isArray(propData))
+            if (Array.isArray(propData))
                 return !propData.includes(conditionData);
             return propData == conditionData;
         case '?':
-            if(Array.isArray(propData)) {
-                for(const p of propData)
-                    if(conditionData.includes(p)) return true;
+            if (Array.isArray(propData)) {
+                for (const p of propData)
+                    if (conditionData.includes(p)) return true;
                 return false;
             }
             return conditionData.includes(propData);
         case '!':
-            if(Array.isArray(propData)) {
-                for(const p of propData)
-                    if(conditionData.includes(p)) return false;
+            if (Array.isArray(propData)) {
+                for (const p of propData)
+                    if (conditionData.includes(p)) return false;
                 return true;
             }
             return !conditionData.includes(propData);
 
-        default: return false;
+        default:
+            return false;
     }
 }
 
@@ -126,4 +134,4 @@ function extractMaxTriggers(condition) {
     return age_list.length;
 }
 
-export { checkCondition, extractMaxTriggers };
+export {checkCondition, extractMaxTriggers};
