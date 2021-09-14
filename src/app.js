@@ -11,7 +11,7 @@ class App {
     #pages;
     #currentPage;
     #talentSelected = new Set();
-    #totalMax = 10000;
+    #totalMax = 20000;
     #isEnd = false;
     #selectedExtendTalent = null;
     #hintTimeout;
@@ -86,7 +86,7 @@ class App {
 
         indexPage
             .find('#modify')
-            .click(() => this.hint('此版本修改：\n- 限制10000初始属性\n- 不强制全部使用+无限刷新天赋\n- 可自选全部天赋\n- 可以两种速度快进人生'));
+            .click(() => this.hint('此版本修改：\n- 限制20000初始属性\n- 不强制全部使用+无限刷新天赋\n- 可自选全部天赋\n- 可以两种速度快进人生'));
 
         indexPage
             .find("#themeToggleBtn")
@@ -242,7 +242,7 @@ class App {
                     return;
                 }
                 talentPage.find('#next').hide();
-                this.#totalMax = 10000 + this.#life.getTalentAllocationAddition(Array.from(this.#talentSelected).map(({id}) => id));
+                this.#totalMax = 20000 + this.#life.getTalentAllocationAddition(Array.from(this.#talentSelected).map(({id}) => id));
                 this.switch('property');
             })
 
@@ -325,10 +325,10 @@ class App {
             return {group, get, set};
         }
 
-        groups.CHR = getBtnGroups("颜值", 0, 2500); // 颜值 charm CHR
-        groups.INT = getBtnGroups("智力", 0, 2500); // 智力 intelligence INT
-        groups.STR = getBtnGroups("体质", 0, 2500); // 体质 strength STR
-        groups.MNY = getBtnGroups("家境", 0, 2500); // 家境 money MNY
+        groups.CHR = getBtnGroups("颜值", 0, 10000); // 颜值 charm CHR
+        groups.INT = getBtnGroups("智力", 0, 10000); // 智力 intelligence INT
+        groups.STR = getBtnGroups("体质", 0, 10000); // 体质 strength STR
+        groups.MNY = getBtnGroups("家境", 0, 10000); // 家境 money MNY
 
         const ul = propertyPage.find('#propertyAllocation');
 
@@ -342,7 +342,7 @@ class App {
                 let t = this.#totalMax;
                 const arr = [10000, 10000, 10000, 10000];
                 while (t > 0) {
-                    const sub = Math.round(Math.random() * (Math.min(t, 2500) - 1)) + 1;
+                    const sub = Math.round(Math.random() * (Math.min(t, 10000) - 1)) + 1;
                     while (true) {
                         const select = Math.floor(Math.random() * 4) % 4;
                         if (arr[select] - sub < 0) continue;
@@ -364,7 +364,7 @@ class App {
                     this.hint(`你多使用了${total() - this.#totalMax}属性点`);
                     return;
                 }
-                this.#life.restart({
+                const contents = this.#life.restart({
                     CHR: groups.CHR.get(),
                     INT: groups.INT.get(),
                     STR: groups.STR.get(),
@@ -373,7 +373,7 @@ class App {
                     TLT: Array.from(this.#talentSelected).map(({id}) => id),
                 });
                 this.switch('trajectory');
-                this.#pages.trajectory.born();
+                this.#pages.trajectory.born(contents);
                 // $(document).keydown(function(event){
                 //     if(event.which == 32 || event.which == 13){
                 //         $('#lifeTrajectory').click();
@@ -671,7 +671,7 @@ class App {
                     talentPage.find('ul.selectlist').empty();
                     talentPage.find('#random').show();
                     talentPage.find('#listall').show();
-                    this.#totalMax = 10000;
+                    this.#totalMax = 20000;
                 },
             },
             property: {
@@ -703,7 +703,15 @@ class App {
                     trajectoryPage.find('#domToImage').hide();
                     this.#isEnd = false;
                 },
-                born: () => {
+                born: contents => {
+                    if (contents.length > 0)
+                        $('#lifeTrajectory')
+                            .append(`<li><span>初始：</span><span>${
+                                contents.map(
+                                    ({source, target}) => `天赋【${source.name}】发动：替换为天赋【${target.name}】`
+                                ).join('<br>')
+                            }</span></li>`);
+
                     trajectoryPage.find('#lifeTrajectory').trigger("click");
                 }
             },
