@@ -115,7 +115,7 @@ class Talent {
             else talentList[grade].push({grade, name, description, id});
         }
 
-        return new Array(135)
+        return new Array(146)
             .fill(1).map(() => {
                 let grade = 3;
                 while (talentList[grade].length == 0) grade--;
