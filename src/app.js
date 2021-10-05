@@ -155,7 +155,7 @@ class App {
                                     talentPage.find('#next').text('请选择3个');
                                 }
                             } else {
-                                if (this.#talentSelected.size == 3) {
+                                if (this.#talentSelected.size == 10000) {
                                     this.hint('只能选3个天赋');
                                     return;
                                 }
@@ -205,7 +205,7 @@ class App {
                                     talentPage.find('#next').text('请选择3个');
                                 }
                             } else {
-                                if (this.#talentSelected.size == 3) {
+                                if (this.#talentSelected.size == 10000) {
                                     this.hint('只能选3个天赋');
                                     return;
                                 }
